@@ -9,6 +9,7 @@ const categoriesRouter = require('./routes/categories');
 const expensesRouter = require('./routes/expenses');
 const incomesRouter = require('./routes/incomes');
 const reportsRouter = require('./routes/reports');
+const webRouter = require('./routes/web');
 
 // Create Express app
 const app = express();
@@ -30,6 +31,7 @@ app.use('/api/categories', categoriesRouter);
 app.use('/api/expenses', expensesRouter);
 app.use('/api/incomes', incomesRouter);
 app.use('/api/reports', reportsRouter);
+app.use('/', webRouter);
 
 // Home route
 app.get('/', (req, res) => {
@@ -39,12 +41,35 @@ app.get('/', (req, res) => {
   });
 });
 
+// Catch 404 and forward to error handler
+app.use((req, res, next) => {
+  const err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+  // Set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = process.env.NODE_ENV === 'development' ? err : {};
+
+  // Render the error page
+  res.status(err.status || 500);
+  
+  // Check if the request is for the API
+  if (req.path.startsWith('/api')) {
+    return res.json({
+      error: err.message,
+      status: err.status || 500
+    });
+  }
+  
+  // Render error page for non-API requests
+  res.render('error', { 
+    title: 'Error',
+    message: err.message,
+    error: err
   });
 });
 

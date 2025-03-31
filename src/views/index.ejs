@@ -6,6 +6,8 @@
   <title><%= title %></title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Custom CSS -->
   <link rel="stylesheet" href="/css/style.css">
 </head>
@@ -20,7 +22,7 @@
       <div class="collapse navbar-collapse" id="navbarNav">
         <ul class="navbar-nav ms-auto">
           <li class="nav-item">
-            <a class="nav-link" href="/">Dashboard</a>
+            <a class="nav-link active" href="/">Dashboard</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/accounts">Accounts</a>
@@ -52,6 +54,40 @@
               <p>This application provides a comprehensive set of RESTful API endpoints for managing your financial data.</p>
               <p>Please refer to the README.md file for detailed API documentation.</p>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Tiles -->
+    <div class="row mb-4">
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-receipt fa-3x text-primary mb-3"></i>
+            <h3 class="h5">Manage Expenses</h3>
+            <p class="text-muted">Add, edit, and delete your expense transactions.</p>
+            <a href="/expenses" class="btn btn-primary mt-2">Go to Expenses</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-wallet fa-3x text-primary mb-3"></i>
+            <h3 class="h5">Track Accounts</h3>
+            <p class="text-muted">Manage your financial accounts and balances.</p>
+            <a href="/accounts" class="btn btn-outline-primary mt-2">Go to Accounts</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+            <h3 class="h5">View Reports</h3>
+            <p class="text-muted">Generate insights with financial reports.</p>
+            <a href="/reports" class="btn btn-outline-primary mt-2">Go to Reports</a>
           </div>
         </div>
       </div>
