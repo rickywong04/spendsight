@@ -3,6 +3,13 @@ const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
 
+// Import routes
+const accountsRouter = require('./routes/accounts');
+const categoriesRouter = require('./routes/categories');
+const expensesRouter = require('./routes/expenses');
+const incomesRouter = require('./routes/incomes');
+const reportsRouter = require('./routes/reports');
+
 // Create Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,52 +18,39 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-// Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// View engine
-app.set('views', path.join(__dirname, 'views'));
+// Set view engine
 app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-// Home page route
+// Routes
+app.use('/api/accounts', accountsRouter);
+app.use('/api/categories', categoriesRouter);
+app.use('/api/expenses', expensesRouter);
+app.use('/api/incomes', incomesRouter);
+app.use('/api/reports', reportsRouter);
+
+// Home route
 app.get('/', (req, res) => {
-  res.render('index', { title: 'SpendSight' });
-});
-
-// Dashboard page
-app.get('/dashboard', (req, res) => {
-  res.render('index', { title: 'Dashboard' });
-});
-
-// Accounts page
-app.get('/accounts', (req, res) => {
-  res.render('index', { title: 'Accounts' });
-});
-
-// Expenses page
-app.get('/expenses', (req, res) => {
-  res.render('index', { title: 'Expenses' });
-});
-
-// Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).render('error', { 
-    title: 'Error',
-    message: err.message || 'Something went wrong!' 
+  res.render('index', { 
+    title: 'SpendSight - Financial Management',
+    content: 'Welcome to SpendSight, your financial management application.'
   });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).render('error', { 
-    title: '404 Not Found',
-    message: 'The page you requested does not exist.'
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
   });
 });
 
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-}); 
+});
+
+module.exports = app; 

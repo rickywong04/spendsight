@@ -3,107 +3,129 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %> - Financial Management</title>
+  <title><%= title %></title>
+  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: linear-gradient(to bottom, #2e026d, #15162c);
-      color: white;
-      min-height: 100vh;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    .hero {
-      padding: 5rem 0;
-      text-align: center;
-    }
-    .brand {
-      font-size: 4rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-    }
-    .brand-highlight {
-      color: hsl(280, 100%, 70%);
-    }
-    .card {
-      background-color: rgba(255, 255, 255, 0.1);
-      border: none;
-      transition: all 0.3s ease;
-    }
-    .card:hover {
-      background-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-5px);
-    }
-    .card-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-  </style>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <div class="container">
-    <div class="hero">
-      <h1 class="brand"><span class="brand-highlight">Spend</span>Sight</h1>
-      <p class="lead mb-5">A Database-Focused Financial Management Application</p>
-      
-      <div class="row g-4 mt-4">
-        <div class="col-md-4">
-          <div class="card text-white p-4 h-100">
-            <div class="card-body text-center">
-              <div class="card-icon">💰</div>
-              <h3>Accounts</h3>
-              <p>Manage your bank accounts, credit cards, and savings</p>
-              <a href="/accounts" class="btn btn-primary mt-3">View Accounts</a>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-4">
-          <div class="card text-white p-4 h-100">
-            <div class="card-body text-center">
-              <div class="card-icon">💸</div>
-              <h3>Expenses</h3>
-              <p>Track your spending with detailed categorization</p>
-              <a href="/expenses" class="btn btn-primary mt-3">View Expenses</a>
-            </div>
-          </div>
-        </div>
-        
-        <div class="col-md-4">
-          <div class="card text-white p-4 h-100">
-            <div class="card-body text-center">
-              <div class="card-icon">📊</div>
-              <h3>Reports</h3>
-              <p>Analyze your finances with detailed reports</p>
-              <a href="/dashboard" class="btn btn-primary mt-3">View Dashboard</a>
-            </div>
-          </div>
-        </div>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/">SpendSight</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/accounts">Accounts</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/expenses">Expenses</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/incomes">Incomes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/reports">Reports</a>
+          </li>
+        </ul>
       </div>
     </div>
-    
-    <div class="row mt-5">
-      <div class="col-12">
-        <div class="card text-white p-4">
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card mb-4">
           <div class="card-body">
-            <h3>Database Features Demonstrated</h3>
-            <ul>
-              <li>Relational Database Design with PostgreSQL</li>
-              <li>SQL Queries with Joins and Subqueries</li>
-              <li>Database Indexing for Performance</li>
-              <li>Stored Procedures for Complex Operations</li>
-              <li>Transaction Management for Data Integrity</li>
-              <li>Advanced SQL Reports with Aggregations</li>
-            </ul>
+            <h1 class="card-title">Welcome to SpendSight</h1>
+            <p class="card-text"><%= content %></p>
+            <div class="alert alert-info">
+              <h4>API Documentation</h4>
+              <p>This application provides a comprehensive set of RESTful API endpoints for managing your financial data.</p>
+              <p>Please refer to the README.md file for detailed API documentation.</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-    
-    <footer class="mt-5 py-3 text-center">
-      <p>SpendSight - Database Assignment © <%= new Date().getFullYear() %></p>
-    </footer>
+
+    <!-- API Endpoints Quick Reference -->
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header bg-light">
+            <h2 class="h5 mb-0">API Endpoints Quick Reference</h2>
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-6">
+                <h5>Accounts</h5>
+                <ul class="list-unstyled">
+                  <li><code>GET /api/accounts</code> - List all accounts</li>
+                  <li><code>GET /api/accounts/:id</code> - Get account details</li>
+                  <li><code>POST /api/accounts</code> - Create new account</li>
+                  <li><code>PUT /api/accounts/:id</code> - Update account</li>
+                  <li><code>DELETE /api/accounts/:id</code> - Delete account</li>
+                  <li><code>POST /api/accounts/transfer</code> - Transfer funds</li>
+                </ul>
+                
+                <h5>Categories</h5>
+                <ul class="list-unstyled">
+                  <li><code>GET /api/categories</code> - List all categories</li>
+                  <li><code>GET /api/categories/:id</code> - Get category details</li>
+                  <li><code>POST /api/categories</code> - Create new category</li>
+                  <li><code>PUT /api/categories/:id</code> - Update category</li>
+                  <li><code>DELETE /api/categories/:id</code> - Delete category</li>
+                </ul>
+              </div>
+              
+              <div class="col-md-6">
+                <h5>Expenses & Incomes</h5>
+                <ul class="list-unstyled">
+                  <li><code>GET /api/expenses</code> - List all expenses</li>
+                  <li><code>GET /api/expenses/:id</code> - Get expense details</li>
+                  <li><code>POST /api/expenses</code> - Create new expense</li>
+                  <li><code>PUT /api/expenses/:id</code> - Update expense</li>
+                  <li><code>DELETE /api/expenses/:id</code> - Delete expense</li>
+                  <li><code>GET /api/incomes</code> - List all incomes</li>
+                  <li><code>POST /api/incomes</code> - Create new income</li>
+                </ul>
+                
+                <h5>Reports</h5>
+                <ul class="list-unstyled">
+                  <li><code>GET /api/reports/monthly-expenses</code> - Monthly expenses by category</li>
+                  <li><code>GET /api/reports/monthly-income</code> - Monthly income by category</li>
+                  <li><code>GET /api/reports/cash-flow</code> - Cash flow analysis</li>
+                  <li><code>GET /api/reports/account-balance-history</code> - Account balance history</li>
+                  <li><code>GET /api/reports/expense-breakdown</code> - Expense breakdown by category</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  
+
+  <!-- Footer -->
+  <footer class="bg-light py-4 mt-5">
+    <div class="container text-center">
+      <p>SpendSight Financial Management Application</p>
+      <p class="text-muted">A database-focused financial management application built with Express.js and PostgreSQL</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS and dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Custom JS -->
+  <script src="/js/main.js"></script>
 </body>
 </html> 

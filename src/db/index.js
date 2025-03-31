@@ -28,7 +28,7 @@ const query = (text, params) => pool.query(text, params);
 
 /**
  * Begin a transaction
- * @returns {Promise<Client>} - Database client with active transaction
+ * @returns {Promise<any>} - Database client with active transaction
  */
 const beginTransaction = async () => {
   const client = await pool.connect();
@@ -43,7 +43,7 @@ const beginTransaction = async () => {
 
 /**
  * Commit a transaction
- * @param {Client} client - Database client with active transaction
+ * @param {any} client - Database client with active transaction
  */
 const commitTransaction = async (client) => {
   try {
@@ -55,7 +55,7 @@ const commitTransaction = async (client) => {
 
 /**
  * Rollback a transaction
- * @param {Client} client - Database client with active transaction
+ * @param {any} client - Database client with active transaction
  */
 const rollbackTransaction = async (client) => {
   try {

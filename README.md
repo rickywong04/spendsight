@@ -1,99 +1,202 @@
-# SpendSight
+# SpendSight Financial Management Application
 
-A database-focused financial management application built with Express.js and PostgreSQL.
+A database-focused financial management application built with Express.js and PostgreSQL. This application emphasizes database concepts including relational schema design, indexing, transactions, stored procedures, and advanced SQL queries.
 
 ## Features
 
-- **Account Management:** Track multiple financial accounts and their balances
-- **Expense Tracking:** Record and categorize expenses
-- **Income Recording:** Track various income sources
-- **Financial Reports:** Generate insights with advanced SQL queries
-- **Transaction Management:** Use database transactions for data integrity
-
-## Database Features Demonstrated
-
-- **Relational Database Design:** Well-structured schema with appropriate relationships
-- **Indexing:** Strategic indexes for query performance
-- **SQL Queries:** Complex joins, subqueries, and aggregations
-- **Stored Procedures:** For handling complex operations like transfers
-- **Transactions:** Ensuring data integrity during multi-step operations
-- **Window Functions:** For advanced analytics and reporting
+- **User-friendly Interface**: Simple EJS templates with Bootstrap styling
+- **Comprehensive API**: RESTful endpoints for all financial operations
+- **PostgreSQL Database**: Leverages advanced PostgreSQL features
+- **Transaction Support**: All financial operations use database transactions
+- **Detailed Reporting**: Advanced SQL queries for financial insights
 
 ## Tech Stack
 
-- **Backend:** Node.js with Express
-- **Database:** PostgreSQL
-- **View Engine:** EJS templates
-- **Styling:** Bootstrap CSS
+- **Backend**: Node.js with Express.js
+- **Database**: PostgreSQL
+- **Views**: EJS templates
+- **Styling**: Bootstrap 5
+- **API**: RESTful JSON API
 
-## Getting Started
+## Prerequisites
 
-### Prerequisites
-
-- Node.js (v16+)
+- Node.js (v14+)
 - PostgreSQL (v12+)
+- npm or yarn
 
-### Installation
+## Installation
 
 1. Clone the repository:
-   ```
-   git clone <repository-url>
-   cd spendsight-express
+   ```bash
+   git clone https://github.com/yourusername/spendsight.git
+   cd spendsight
    ```
 
 2. Install dependencies:
-   ```
+   ```bash
    npm install
    ```
 
-3. Create .env file with your PostgreSQL credentials:
-   ```
-   PORT=3000
-   DB_HOST=localhost
-   DB_PORT=5432
-   DB_USER=postgres
-   DB_PASSWORD=your_password
-   DB_NAME=spendsight
+3. Create a PostgreSQL database:
+   ```bash
+   createdb spendsight
    ```
 
-4. Initialize the database:
-   ```
-   node src/db/init.js
+4. Configure environment variables:
+   - Copy `.env.example` to `.env`
+   - Update database connection details
+
+5. Initialize the database:
+   ```bash
+   npm run db:init
    ```
 
-5. Start the application:
-   ```
+6. Start the server:
+   ```bash
    npm run dev
    ```
 
-6. Visit http://localhost:3000 in your browser
+7. Access the application:
+   - Open http://localhost:3000 in your browser
 
-## API Endpoints
+## Database Schema
+
+The application uses the following database tables:
+
+- **users**: Basic user information
+- **accounts**: Financial accounts (checking, savings, credit cards)
+- **categories**: Categories for expenses and incomes
+- **expenses**: Individual expense transactions
+- **incomes**: Individual income transactions
+
+The schema includes foreign key relationships, appropriate indexes, and stored procedures for common operations.
+
+## API Documentation
 
 ### Accounts
-- `GET /api/accounts` - Get all accounts
-- `GET /api/accounts/:id` - Get specific account
-- `POST /api/accounts` - Create account
-- `PUT /api/accounts/:id` - Update account
-- `DELETE /api/accounts/:id` - Delete account
-- `POST /api/accounts/transfer` - Transfer between accounts
 
-### Expenses
-- `GET /api/expenses` - Get expenses with filters
-- `POST /api/expenses` - Create expense
-- `PUT /api/expenses/:id` - Update expense
-- `DELETE /api/expenses/:id` - Delete expense
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/accounts` | GET | List all accounts |
+| `/api/accounts/:id` | GET | Get account details |
+| `/api/accounts` | POST | Create new account |
+| `/api/accounts/:id` | PUT | Update account |
+| `/api/accounts/:id` | DELETE | Delete account |
+| `/api/accounts/transfer` | POST | Transfer funds between accounts |
 
-### Incomes
-- `GET /api/incomes` - Get incomes with filters
-- `POST /api/incomes` - Create income
+#### Example Request (Create Account)
+```json
+{
+  "user_id": 1,
+  "name": "Checking Account",
+  "type": "checking",
+  "balance": 1000
+}
+```
 
 ### Categories
-- `GET /api/categories` - Get all categories
-- `POST /api/categories` - Create category
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/categories` | GET | List all categories |
+| `/api/categories/:id` | GET | Get category details |
+| `/api/categories` | POST | Create new category |
+| `/api/categories/:id` | PUT | Update category |
+| `/api/categories/:id` | DELETE | Delete category |
+
+#### Example Request (Create Category)
+```json
+{
+  "name": "Groceries",
+  "type": "expense"
+}
+```
+
+### Expenses
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/expenses` | GET | List all expenses |
+| `/api/expenses/:id` | GET | Get expense details |
+| `/api/expenses` | POST | Create new expense |
+| `/api/expenses/:id` | PUT | Update expense |
+| `/api/expenses/:id` | DELETE | Delete expense |
+
+#### Example Request (Create Expense)
+```json
+{
+  "user_id": 1,
+  "account_id": 1,
+  "category_id": 3,
+  "amount": 45.67,
+  "description": "Weekly groceries",
+  "date": "2023-06-15"
+}
+```
+
+### Incomes
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/incomes` | GET | List all incomes |
+| `/api/incomes/:id` | GET | Get income details |
+| `/api/incomes` | POST | Create new income |
+| `/api/incomes/:id` | PUT | Update income |
+| `/api/incomes/:id` | DELETE | Delete income |
+
+#### Example Request (Create Income)
+```json
+{
+  "user_id": 1,
+  "account_id": 1,
+  "category_id": 8,
+  "amount": 2500,
+  "description": "Monthly salary",
+  "date": "2023-06-01"
+}
+```
 
 ### Reports
-- `GET /api/reports/expenses-by-category` - Get expense summary by category
-- `GET /api/reports/monthly-expenses` - Get monthly expense summary
-- `GET /api/reports/income-vs-expenses` - Compare income and expenses
-- `GET /api/reports/account-balance-history` - Get account balance history 
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/reports/monthly-expenses` | GET | Monthly expenses by category |
+| `/api/reports/monthly-income` | GET | Monthly income by category |
+| `/api/reports/cash-flow` | GET | Cash flow analysis |
+| `/api/reports/account-balance-history` | GET | Account balance history |
+| `/api/reports/expense-breakdown` | GET | Expense breakdown by category |
+
+#### Example Request (Monthly Expenses)
+```
+GET /api/reports/monthly-expenses?year=2023&month=6&user_id=1
+```
+
+## Database Features Showcase
+
+This application showcases several advanced PostgreSQL features:
+
+1. **Transactions**: All financial operations use transactions to ensure data integrity
+2. **Stored Procedures**: Fund transfers use a stored procedure to ensure atomicity
+3. **Indexes**: Strategic indexes on commonly queried columns for performance
+4. **Complex Queries**: Reports use window functions, CTEs, and aggregations
+5. **Database Functions**: Custom functions for common calculations
+
+## Development
+
+- Start development server:
+  ```bash
+  npm run dev
+  ```
+
+- Initialize/reset database:
+  ```bash
+  npm run db:init
+  ```
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- This project was created as a demonstration of database concepts with Express.js and PostgreSQL. 

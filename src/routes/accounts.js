@@ -3,161 +3,148 @@ const router = express.Router();
 const db = require('../db');
 
 // Get all accounts
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
-    const result = await db.query('SELECT * FROM accounts ORDER BY name');
+    const userId = req.query.user_id || 1; // Default to user 1 for demo
+    const result = await db.query(
+      'SELECT * FROM accounts WHERE user_id = $1 ORDER BY name',
+      [userId]
+    );
     res.json(result.rows);
-  } catch (error) {
-    console.error('Error fetching accounts:', error);
-    res.status(500).json({ error: 'Failed to fetch accounts' });
+  } catch (err) {
+    next(err);
   }
 });
 
 // Get account by ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const result = await db.query('SELECT * FROM accounts WHERE id = $1', [id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Account not found' });
+      return res.status(404).json({ message: 'Account not found' });
     }
     
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error fetching account:', error);
-    res.status(500).json({ error: 'Failed to fetch account' });
+  } catch (err) {
+    next(err);
   }
 });
 
 // Create new account
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
-    const { user_id, name, type, balance = 0 } = req.body;
-    
-    // Validate required fields
-    if (!user_id || !name || !type) {
-      return res.status(400).json({ error: 'Missing required fields: user_id, name, type' });
-    }
+    const { user_id, name, type, balance } = req.body;
     
     const result = await db.query(
-      'INSERT INTO accounts (user_id, name, type, balance) VALUES ($1, $2, $3, $4) RETURNING *',
-      [user_id, name, type, balance]
+      `INSERT INTO accounts (user_id, name, type, balance, created_at, updated_at) 
+       VALUES ($1, $2, $3, $4, NOW(), NOW()) 
+       RETURNING *`,
+      [user_id || 1, name, type, balance || 0]
     );
     
     res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating account:', error);
-    res.status(500).json({ error: 'Failed to create account' });
+  } catch (err) {
+    next(err);
   }
 });
 
 // Update account
-router.put('/:id', async (req, res) => {
+router.put('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
     const { name, type, balance } = req.body;
     
-    // Build dynamic query based on provided fields
-    let query = 'UPDATE accounts SET updated_at = CURRENT_TIMESTAMP';
-    const values = [];
-    let paramCount = 1;
-    
-    if (name) {
-      query += `, name = $${paramCount}`;
-      values.push(name);
-      paramCount++;
-    }
-    
-    if (type) {
-      query += `, type = $${paramCount}`;
-      values.push(type);
-      paramCount++;
-    }
-    
-    if (balance !== undefined) {
-      query += `, balance = $${paramCount}`;
-      values.push(balance);
-      paramCount++;
-    }
-    
-    query += ` WHERE id = $${paramCount} RETURNING *`;
-    values.push(id);
-    
-    const result = await db.query(query, values);
+    const result = await db.query(
+      `UPDATE accounts 
+       SET name = $1, type = $2, balance = $3, updated_at = NOW() 
+       WHERE id = $4 
+       RETURNING *`,
+      [name, type, balance, id]
+    );
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Account not found' });
+      return res.status(404).json({ message: 'Account not found' });
     }
     
     res.json(result.rows[0]);
-  } catch (error) {
-    console.error('Error updating account:', error);
-    res.status(500).json({ error: 'Failed to update account' });
+  } catch (err) {
+    next(err);
   }
 });
 
 // Delete account
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await db.query('DELETE FROM accounts WHERE id = $1 RETURNING *', [id]);
     
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Account not found' });
-    }
+    // Check if account has associated transactions
+    const checkTransactions = await db.query(
+      'SELECT COUNT(*) FROM expenses WHERE account_id = $1 UNION ALL SELECT COUNT(*) FROM incomes WHERE account_id = $1',
+      [id]
+    );
     
-    res.json({ message: 'Account deleted successfully', account: result.rows[0] });
-  } catch (error) {
-    console.error('Error deleting account:', error);
-    res.status(500).json({ error: 'Failed to delete account' });
-  }
-});
-
-// Transfer funds between accounts (uses stored procedure)
-router.post('/transfer', async (req, res) => {
-  const client = await db.beginTransaction();
-  
-  try {
-    const { from_account_id, to_account_id, amount } = req.body;
-    
-    // Validate required fields
-    if (!from_account_id || !to_account_id || !amount) {
-      await db.rollbackTransaction(client);
+    if (parseInt(checkTransactions.rows[0].count) > 0 || parseInt(checkTransactions.rows[1].count) > 0) {
       return res.status(400).json({ 
-        error: 'Missing required fields: from_account_id, to_account_id, amount' 
+        message: 'Cannot delete account with associated transactions' 
       });
     }
     
-    // Call the stored procedure
-    await client.query(
-      'CALL transfer_funds($1, $2, $3)',
-      [from_account_id, to_account_id, amount]
-    );
+    const result = await db.query('DELETE FROM accounts WHERE id = $1 RETURNING *', [id]);
     
-    // Get updated accounts
-    const fromAccount = await client.query(
-      'SELECT * FROM accounts WHERE id = $1',
-      [from_account_id]
-    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Account not found' });
+    }
     
-    const toAccount = await client.query(
-      'SELECT * FROM accounts WHERE id = $1',
-      [to_account_id]
-    );
+    res.json({ message: 'Account deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Transfer funds between accounts
+router.post('/transfer', async (req, res, next) => {
+  try {
+    const { from_account_id, to_account_id, amount } = req.body;
     
-    await db.commitTransaction(client);
+    if (!from_account_id || !to_account_id || !amount || amount <= 0) {
+      return res.status(400).json({ 
+        message: 'Invalid transfer parameters'
+      });
+    }
     
-    res.status(200).json({
-      message: 'Funds transferred successfully',
-      from_account: fromAccount.rows[0],
-      to_account: toAccount.rows[0],
-      amount
-    });
-  } catch (error) {
-    await db.rollbackTransaction(client);
-    console.error('Error transferring funds:', error);
-    res.status(500).json({ error: error.message || 'Failed to transfer funds' });
+    const client = await db.getClient();
+    
+    try {
+      await client.query('BEGIN');
+      
+      // Call the stored procedure we created in init.sql
+      const result = await client.query(
+        'CALL transfer_funds($1, $2, $3, $4)',
+        [from_account_id, to_account_id, amount, 'Transfer']
+      );
+      
+      await client.query('COMMIT');
+      
+      // Fetch the updated accounts
+      const accounts = await db.query(
+        'SELECT * FROM accounts WHERE id IN ($1, $2)',
+        [from_account_id, to_account_id]
+      );
+      
+      res.json({
+        message: 'Transfer completed successfully',
+        accounts: accounts.rows
+      });
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    next(err);
   }
 });
 
