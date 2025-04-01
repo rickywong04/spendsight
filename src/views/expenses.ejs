@@ -31,7 +31,7 @@
             <a class="nav-link active" href="/expenses">Expenses</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/incomes">Incomes</a>
+            <a class="nav-link" href="/categories">Categories</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/reports">Reports</a>
@@ -159,7 +159,7 @@
                         <td><%= expense.description || 'No description' %></td>
                         <td><%= expense.category_name %></td>
                         <td><%= expense.account_name %></td>
-                        <td class="text-end currency negative">$<%= expense.amount.toFixed(2) %></td>
+                        <td class="text-end currency negative">$<%= parseFloat(expense.amount).toFixed(2) %></td>
                         <td class="text-center">
                           <div class="btn-group btn-group-sm">
                             <a href="/expenses/edit/<%= expense.id %>" class="btn btn-outline-primary">
@@ -185,7 +185,7 @@
                                     <li><strong>Date:</strong> <%= new Date(expense.date).toLocaleDateString() %></li>
                                     <li><strong>Description:</strong> <%= expense.description || 'No description' %></li>
                                     <li><strong>Category:</strong> <%= expense.category_name %></li>
-                                    <li><strong>Amount:</strong> $<%= expense.amount.toFixed(2) %></li>
+                                    <li><strong>Amount:</strong> $<%= parseFloat(expense.amount).toFixed(2) %></li>
                                   </ul>
                                   <p class="text-danger mb-0">This action cannot be undone.</p>
                                 </div>

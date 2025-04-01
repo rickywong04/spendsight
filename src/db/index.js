@@ -1,19 +1,20 @@
 const { Pool } = require('pg');
 require('dotenv').config();
+const format = require('pg-format');
+const { promisify } = require('util');
 
 // Create connection pool
 const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres',
+  database: process.env.DB_NAME || 'spendsight',
   // Set a longer connection timeout
   connectionTimeoutMillis: 5000, 
   // Add a retry strategy
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
 });
 
 // Test connection
@@ -26,7 +27,7 @@ pool.query('SELECT NOW()', (err, res) => {
 });
 
 /**
- * Execute a query with parameters
+ * Execute a query with parameters (Prepared Statement)
  * @param {string} text - The SQL query
  * @param {Array} params - The parameters for the query
  * @returns {Promise} - A promise resolving to the query result
@@ -45,8 +46,6 @@ const query = async (text, params) => {
     return result;
   } catch (error) {
     console.error('Query error:', error);
-    
-    // Rethrow the error to handle it in the route handler
     throw error;
   }
 };
@@ -65,94 +64,135 @@ const getClient = async () => {
   }
 };
 
-// Create a mock database if connection fails (for development/testing)
-let mockDb = null;
-
 /**
- * Get a mock database for development/testing when real DB is unavailable
+ * Call a stored procedure
+ * @param {string} procedureName - The name of the procedure
+ * @param {Array} params - The parameters for the procedure
+ * @returns {Promise} - A promise resolving to the procedure result
  */
-const getMockDb = () => {
-  if (!mockDb) {
-    // Initialize in-memory mock data
-    mockDb = {
-      users: [{ id: 1, name: 'Demo User', email: 'demo@example.com' }],
-      accounts: [
-        { id: 1, user_id: 1, name: 'Checking Account', type: 'checking', balance: 1000 },
-        { id: 2, user_id: 1, name: 'Savings Account', type: 'savings', balance: 5000 }
-      ],
-      categories: [
-        { id: 1, name: 'Groceries', type: 'expense' },
-        { id: 2, name: 'Dining', type: 'expense' },
-        { id: 3, name: 'Transportation', type: 'expense' },
-        { id: 4, name: 'Utilities', type: 'expense' },
-        { id: 5, name: 'Salary', type: 'income' }
-      ],
-      expenses: [
-        { 
-          id: 1, 
-          user_id: 1, 
-          account_id: 1, 
-          category_id: 1, 
-          amount: 75.50, 
-          description: 'Weekly groceries', 
-          date: new Date(), 
-          created_at: new Date(), 
-          updated_at: new Date() 
-        }
-      ],
-      incomes: [
-        { 
-          id: 1, 
-          user_id: 1, 
-          account_id: 1, 
-          category_id: 5, 
-          amount: 2500, 
-          description: 'Monthly salary', 
-          date: new Date(), 
-          created_at: new Date(), 
-          updated_at: new Date() 
-        }
-      ]
-    };
-  }
+const callProcedure = async (procedureName, params) => {
+  const paramPlaceholders = params.map((_, i) => `$${i + 1}`).join(', ');
+  const query = `CALL ${procedureName}(${paramPlaceholders})`;
   
-  return mockDb;
+  try {
+    return await pool.query(query, params);
+  } catch (error) {
+    console.error(`Error calling procedure ${procedureName}:`, error);
+    throw error;
+  }
 };
 
 /**
- * Fallback query function that uses mock data if DB is unavailable
+ * Basic ORM functionality for database entities
  */
-const fallbackQuery = async (text, params) => {
-  try {
-    return await query(text, params);
-  } catch (error) {
-    console.warn('Database unavailable, using mock data');
+class BaseModel {
+  constructor(tableName, fields) {
+    this.tableName = tableName;
+    this.fields = fields;
+  }
+
+  /**
+   * Find all records in the table
+   * @param {Object} where - The where clause conditions
+   * @returns {Promise<Array>} - A promise resolving to an array of records
+   */
+  async findAll(where = {}) {
+    let whereClause = '';
+    const params = [];
     
-    // Very simple mock implementation for testing
-    const mockData = getMockDb();
-    
-    // Simple parsing of query to determine what to return
-    if (text.includes('FROM accounts')) {
-      return { rows: mockData.accounts };
-    } else if (text.includes('FROM categories')) {
-      const isExpenseType = text.includes('type = $1') && params[0] === 'expense';
-      return { 
-        rows: isExpenseType 
-          ? mockData.categories.filter(c => c.type === 'expense') 
-          : mockData.categories 
-      };
-    } else if (text.includes('FROM expenses')) {
-      return { rows: mockData.expenses };
-    } else if (text.includes('FROM incomes')) {
-      return { rows: mockData.incomes };
+    // Build the where clause
+    if (Object.keys(where).length > 0) {
+      const conditions = [];
+      let paramIndex = 1;
+      
+      for (const [key, value] of Object.entries(where)) {
+        conditions.push(`${key} = $${paramIndex}`);
+        params.push(value);
+        paramIndex++;
+      }
+      
+      whereClause = `WHERE ${conditions.join(' AND ')}`;
     }
     
-    return { rows: [] };
+    const text = `SELECT * FROM ${this.tableName} ${whereClause}`;
+    const result = await query(text, params);
+    return result.rows;
   }
-};
+
+  /**
+   * Find a record by id
+   * @param {number} id - The id of the record
+   * @returns {Promise<Object>} - A promise resolving to the record
+   */
+  async findById(id) {
+    const text = `SELECT * FROM ${this.tableName} WHERE id = $1`;
+    const result = await query(text, [id]);
+    return result.rows[0];
+  }
+
+  /**
+   * Create a new record
+   * @param {Object} data - The data for the new record
+   * @returns {Promise<Object>} - A promise resolving to the new record
+   */
+  async create(data) {
+    const fields = Object.keys(data);
+    const values = Object.values(data);
+    
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(', ');
+    const fieldNames = fields.join(', ');
+    
+    const text = `INSERT INTO ${this.tableName} (${fieldNames}) VALUES (${placeholders}) RETURNING *`;
+    const result = await query(text, values);
+    return result.rows[0];
+  }
+
+  /**
+   * Update a record
+   * @param {number} id - The id of the record to update
+   * @param {Object} data - The data to update
+   * @returns {Promise<Object>} - A promise resolving to the updated record
+   */
+  async update(id, data) {
+    const fields = Object.keys(data);
+    const values = Object.values(data);
+    
+    const setClause = fields.map((field, i) => `${field} = $${i + 1}`).join(', ');
+    
+    const text = `UPDATE ${this.tableName} SET ${setClause}, updated_at = NOW() WHERE id = $${values.length + 1} RETURNING *`;
+    const result = await query(text, [...values, id]);
+    return result.rows[0];
+  }
+
+  /**
+   * Delete a record
+   * @param {number} id - The id of the record to delete
+   * @returns {Promise<boolean>} - A promise resolving to true if successful
+   */
+  async delete(id) {
+    const text = `DELETE FROM ${this.tableName} WHERE id = $1`;
+    await query(text, [id]);
+    return true;
+  }
+}
+
+// Create model instances for each entity
+const User = new BaseModel('users', ['id', 'name', 'email', 'created_at', 'updated_at']);
+const Account = new BaseModel('accounts', ['id', 'user_id', 'name', 'type', 'balance', 'created_at', 'updated_at']);
+const Category = new BaseModel('categories', ['id', 'name', 'type', 'created_at', 'updated_at']);
+const Expense = new BaseModel('expenses', ['id', 'user_id', 'account_id', 'category_id', 'amount', 'description', 'date', 'created_at', 'updated_at']);
+const Income = new BaseModel('incomes', ['id', 'user_id', 'account_id', 'category_id', 'amount', 'description', 'date', 'created_at', 'updated_at']);
 
 module.exports = {
-  query: fallbackQuery,
+  query,
   getClient,
-  pool
+  pool,
+  callProcedure,
+  models: {
+    User,
+    Account,
+    Category,
+    Expense,
+    Income
+  }
 }; 

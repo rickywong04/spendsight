@@ -3,13 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><%= title %></title>
+  <title><%= title %> - SpendSight</title>
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- Font Awesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Custom CSS -->
-  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .card {
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      margin-bottom: 20px;
+    }
+    .feature-icon {
+      font-size: 2.5rem;
+      color: #0d6efd;
+      margin-bottom: 1rem;
+    }
+  </style>
 </head>
 <body>
   <!-- Navigation -->
@@ -31,7 +43,7 @@
             <a class="nav-link" href="/expenses">Expenses</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/incomes">Incomes</a>
+            <a class="nav-link" href="/categories">Categories</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/reports">Reports</a>
@@ -43,17 +55,91 @@
 
   <!-- Main Content -->
   <div class="container mt-4">
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= success %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <% } %>
+    
     <div class="row">
       <div class="col-md-12">
         <div class="card mb-4">
           <div class="card-body">
             <h1 class="card-title">Welcome to SpendSight</h1>
-            <p class="card-text"><%= content %></p>
-            <div class="alert alert-info">
-              <h4>API Documentation</h4>
-              <p>This application provides a comprehensive set of RESTful API endpoints for managing your financial data.</p>
-              <p>Please refer to the README.md file for detailed API documentation.</p>
-            </div>
+            <p class="card-text">A database-focused financial management application built with Express.js and PostgreSQL.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Accounts Summary -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header bg-primary text-white">
+            <h2 class="h5 mb-0">Account Summary</h2>
+          </div>
+          <div class="card-body">
+            <% if (accounts && accounts.length > 0) { %>
+              <div class="row">
+                <% accounts.forEach(account => { %>
+                  <div class="col-md-4 mb-3">
+                    <div class="card h-100 <%= account.balance < 0 ? 'border-danger' : 'border-success' %>">
+                      <div class="card-body">
+                        <h5 class="card-title"><%= account.name %></h5>
+                        <h6 class="card-subtitle mb-2 text-muted"><%= account.type.charAt(0).toUpperCase() + account.type.slice(1) %></h6>
+                        <p class="card-text fs-4 <%= account.balance < 0 ? 'text-danger' : 'text-success' %>">
+                          $<%= parseFloat(account.balance).toFixed(2) %>
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <p class="text-center">No accounts found.</p>
+            <% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Expenses -->
+    <div class="row mb-4">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">Recent Expenses</h2>
+            <a href="/expenses" class="btn btn-sm btn-light">View All</a>
+          </div>
+          <div class="card-body p-0">
+            <% if (expenses && expenses.rows && expenses.rows.length > 0) { %>
+              <table class="table table-hover mb-0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Account</th>
+                    <th>Description</th>
+                    <th class="text-end">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% expenses.rows.forEach(expense => { %>
+                    <tr>
+                      <td><%= new Date(expense.date).toLocaleDateString() %></td>
+                      <td><%= expense.category_name %></td>
+                      <td><%= expense.account_name %></td>
+                      <td><%= expense.description %></td>
+                      <td class="text-end text-danger">$<%= parseFloat(expense.amount).toFixed(2) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            <% } else { %>
+              <div class="p-3 text-center">No recent expenses found.</div>
+            <% } %>
           </div>
         </div>
       </div>
@@ -61,30 +147,40 @@
 
     <!-- Feature Tiles -->
     <div class="row mb-4">
-      <div class="col-md-4 mb-4">
+      <div class="col-md-3 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
-            <i class="fas fa-receipt fa-3x text-primary mb-3"></i>
+            <i class="fas fa-receipt feature-icon"></i>
             <h3 class="h5">Manage Expenses</h3>
             <p class="text-muted">Add, edit, and delete your expense transactions.</p>
             <a href="/expenses" class="btn btn-primary mt-2">Go to Expenses</a>
           </div>
         </div>
       </div>
-      <div class="col-md-4 mb-4">
+      <div class="col-md-3 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
-            <i class="fas fa-wallet fa-3x text-primary mb-3"></i>
+            <i class="fas fa-tags feature-icon"></i>
+            <h3 class="h5">Manage Categories</h3>
+            <p class="text-muted">Create and organize expense and income categories.</p>
+            <a href="/categories" class="btn btn-primary mt-2">Go to Categories</a>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center">
+            <i class="fas fa-wallet feature-icon"></i>
             <h3 class="h5">Track Accounts</h3>
             <p class="text-muted">Manage your financial accounts and balances.</p>
             <a href="/accounts" class="btn btn-outline-primary mt-2">Go to Accounts</a>
           </div>
         </div>
       </div>
-      <div class="col-md-4 mb-4">
+      <div class="col-md-3 mb-4">
         <div class="card h-100">
           <div class="card-body text-center">
-            <i class="fas fa-chart-pie fa-3x text-primary mb-3"></i>
+            <i class="fas fa-chart-pie feature-icon"></i>
             <h3 class="h5">View Reports</h3>
             <p class="text-muted">Generate insights with financial reports.</p>
             <a href="/reports" class="btn btn-outline-primary mt-2">Go to Reports</a>
@@ -93,56 +189,29 @@
       </div>
     </div>
 
-    <!-- API Endpoints Quick Reference -->
+    <!-- Database Features -->
     <div class="row">
       <div class="col-md-12">
         <div class="card">
           <div class="card-header bg-light">
-            <h2 class="h5 mb-0">API Endpoints Quick Reference</h2>
+            <h2 class="h5 mb-0">Database Features Showcase</h2>
           </div>
           <div class="card-body">
             <div class="row">
               <div class="col-md-6">
-                <h5>Accounts</h5>
-                <ul class="list-unstyled">
-                  <li><code>GET /api/accounts</code> - List all accounts</li>
-                  <li><code>GET /api/accounts/:id</code> - Get account details</li>
-                  <li><code>POST /api/accounts</code> - Create new account</li>
-                  <li><code>PUT /api/accounts/:id</code> - Update account</li>
-                  <li><code>DELETE /api/accounts/:id</code> - Delete account</li>
-                  <li><code>POST /api/accounts/transfer</code> - Transfer funds</li>
-                </ul>
+                <h5>Prepared Statements</h5>
+                <p>All database operations use parameterized queries for security and performance.</p>
                 
-                <h5>Categories</h5>
-                <ul class="list-unstyled">
-                  <li><code>GET /api/categories</code> - List all categories</li>
-                  <li><code>GET /api/categories/:id</code> - Get category details</li>
-                  <li><code>POST /api/categories</code> - Create new category</li>
-                  <li><code>PUT /api/categories/:id</code> - Update category</li>
-                  <li><code>DELETE /api/categories/:id</code> - Delete category</li>
-                </ul>
+                <h5>ORM Functionality</h5>
+                <p>Simple CRUD operations use a lightweight ORM implementation.</p>
               </div>
               
               <div class="col-md-6">
-                <h5>Expenses & Incomes</h5>
-                <ul class="list-unstyled">
-                  <li><code>GET /api/expenses</code> - List all expenses</li>
-                  <li><code>GET /api/expenses/:id</code> - Get expense details</li>
-                  <li><code>POST /api/expenses</code> - Create new expense</li>
-                  <li><code>PUT /api/expenses/:id</code> - Update expense</li>
-                  <li><code>DELETE /api/expenses/:id</code> - Delete expense</li>
-                  <li><code>GET /api/incomes</code> - List all incomes</li>
-                  <li><code>POST /api/incomes</code> - Create new income</li>
-                </ul>
+                <h5>Stored Procedures</h5>
+                <p>Fund transfers between accounts use atomic stored procedures.</p>
                 
-                <h5>Reports</h5>
-                <ul class="list-unstyled">
-                  <li><code>GET /api/reports/monthly-expenses</code> - Monthly expenses by category</li>
-                  <li><code>GET /api/reports/monthly-income</code> - Monthly income by category</li>
-                  <li><code>GET /api/reports/cash-flow</code> - Cash flow analysis</li>
-                  <li><code>GET /api/reports/account-balance-history</code> - Account balance history</li>
-                  <li><code>GET /api/reports/expense-breakdown</code> - Expense breakdown by category</li>
-                </ul>
+                <h5>Database Functions</h5>
+                <p>Reporting capabilities leverage PostgreSQL custom functions.</p>
               </div>
             </div>
           </div>
@@ -161,7 +230,5 @@
 
   <!-- Bootstrap JS and dependencies -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Custom JS -->
-  <script src="/js/main.js"></script>
 </body>
 </html> 

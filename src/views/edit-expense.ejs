@@ -31,7 +31,7 @@
             <a class="nav-link active" href="/expenses">Expenses</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/incomes">Incomes</a>
+            <a class="nav-link" href="/categories">Categories</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="/reports">Reports</a>
@@ -147,7 +147,7 @@
               <div class="col-md-6">
                 <p><strong>Account:</strong> <%= expense.account_name %></p>
                 <p><strong>Category:</strong> <%= expense.category_name %></p>
-                <p><strong>Amount:</strong> <span class="currency negative">$<%= expense.amount.toFixed(2) %></span></p>
+                <p><strong>Amount:</strong> <span class="currency negative">$<%= parseFloat(expense.amount).toFixed(2) %></span></p>
               </div>
             </div>
           </div>
