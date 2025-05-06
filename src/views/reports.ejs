@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - SpendSight</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .stats-card {
+      transition: all 0.3s;
+    }
+    .stats-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .stats-icon {
+      font-size: 2rem;
+      opacity: 0.8;
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="/">SpendSight</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="/">Dashboard</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/accounts">Accounts</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/expenses">Expenses</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="/categories">Categories</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active" href="/reports">Reports</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="container my-4">
+    <div class="row">
+      <div class="col-md-12">
+        <h1 class="mb-4">Financial Reports</h1>
+        
+        <% if (error) { %>
+          <div class="alert alert-danger">
+            <%= error %>
+          </div>
+        <% } %>
+        
+        <!-- Report Filters -->
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Create Custom Report</h5>
+          </div>
+          <div class="card-body">
+            <form action="/reports/generate" method="POST" class="row g-3">
+              <div class="col-md-6 col-lg-3">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" 
+                       value="<%= defaultStartDate %>" required>
+              </div>
+              
+              <div class="col-md-6 col-lg-3">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" 
+                       value="<%= defaultEndDate %>" required>
+              </div>
+              
+              <div class="col-md-6 col-lg-3">
+                <label for="account_id" class="form-label">Account</label>
+                <select class="form-select" id="account_id" name="account_id">
+                  <option value="all" <%= locals.selectedAccount === 'all' ? 'selected' : '' %>>All Accounts</option>
+                  <% accounts.forEach(account => { %>
+                    <option value="<%= account.id %>" <%= locals.selectedAccount == account.id ? 'selected' : '' %>>
+                      <%= account.name %>
+                    </option>
+                  <% }); %>
+                </select>
+              </div>
+              
+              <div class="col-md-6 col-lg-3">
+                <label for="category_id" class="form-label">Category</label>
+                <select class="form-select" id="category_id" name="category_id">
+                  <option value="all" <%= locals.selectedCategory === 'all' ? 'selected' : '' %>>All Categories</option>
+                  <% categories.filter(c => c.type === 'expense').forEach(category => { %>
+                    <option value="<%= category.id %>" <%= locals.selectedCategory == category.id ? 'selected' : '' %>>
+                      <%= category.name %>
+                    </option>
+                  <% }); %>
+                </select>
+              </div>
+              
+              <div class="col-12 mt-3">
+                <button type="submit" class="btn btn-primary">
+                  <i class="fas fa-search me-2"></i>Generate Report
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        
+        <% if (reportData) { %>
+          <!-- Statistics Cards -->
+          <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+              <div class="card stats-card bg-light">
+                <div class="card-body text-center">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Total Expenses</h5>
+                    <i class="fas fa-money-bill-wave stats-icon text-danger"></i>
+                  </div>
+                  <h3 class="text-danger">&dollar;<%= reportData.stats.total_amount.toFixed(2) %></h3>
+                  <p class="text-muted mb-0"><%= reportData.stats.transaction_count %> transactions</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+              <div class="card stats-card bg-light">
+                <div class="card-body text-center">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Daily Average</h5>
+                    <i class="fas fa-calendar-day stats-icon text-primary"></i>
+                  </div>
+                  <h3 class="text-primary">&dollar;<%= reportData.stats.daily_average.toFixed(2) %></h3>
+                  <p class="text-muted mb-0">Over <%= reportData.stats.days_in_period %> days</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-4 mb-3">
+              <div class="card stats-card bg-light">
+                <div class="card-body text-center">
+                  <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Average Transaction</h5>
+                    <i class="fas fa-receipt stats-icon text-info"></i>
+                  </div>
+                  <h3 class="text-info">&dollar;<%= reportData.stats.avg_amount.toFixed(2) %></h3>
+                  <p class="text-muted mb-0">
+                    Range: $<%= reportData.stats.min_amount.toFixed(2) %> - $<%= reportData.stats.max_amount.toFixed(2) %>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Charts -->
+          <div class="row mb-4">
+            <div class="col-md-6 mb-4">
+              <div class="card">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Expenses by Category</h5>
+                </div>
+                <div class="card-body">
+                  <div class="chart-container">
+                    <canvas id="categoryChart"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="col-md-6 mb-4">
+              <div class="card">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Category Breakdown</h5>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table class="table table-hover">
+                      <thead class="table-light">
+                        <tr>
+                          <th>Category</th>
+                          <th class="text-center">Transactions</th>
+                          <th class="text-end">Amount</th>
+                          <th class="text-end">% of Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <% reportData.stats.category_breakdown.forEach(category => { %>
+                          <% if (category.total_amount > 0) { %>
+                            <tr>
+                              <td><%= category.category_name %></td>
+                              <td class="text-center"><%= category.transaction_count %></td>
+                              <td class="text-end">&dollar;<%= category.total_amount.toFixed(2) %></td>
+                              <td class="text-end">
+                                <%= ((category.total_amount / reportData.stats.total_amount) * 100).toFixed(1) %>%
+                              </td>
+                            </tr>
+                          <% } %>
+                        <% }); %>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Transactions Table -->
+          <div class="card">
+            <div class="card-header bg-light">
+              <h5 class="mb-0">Expense Transactions</h5>
+            </div>
+            <div class="card-body">
+              <% if (reportData.expenses.length === 0) { %>
+                <div class="alert alert-info">
+                  No transactions found for the selected criteria.
+                </div>
+              <% } else { %>
+                <div class="table-responsive">
+                  <table class="table table-hover">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Account</th>
+                        <th class="text-end">Amount</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <% reportData.expenses.forEach(expense => { %>
+                        <tr>
+                          <td><%= new Date(expense.date).toLocaleDateString() %></td>
+                          <td><%= expense.description || 'No description' %></td>
+                          <td><%= expense.category_name %></td>
+                          <td><%= expense.account_name %></td>
+                          <td class="text-end currency negative">&dollar;<%= parseFloat(expense.amount).toFixed(2) %></td>
+                        </tr>
+                      <% }); %>
+                    </tbody>
+                  </table>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        <% } else { %>
+          <!-- Initial Help Message -->
+          <div class="card">
+            <div class="card-body text-center py-5">
+              <i class="fas fa-chart-line fa-4x text-muted mb-3"></i>
+              <h3>Welcome to Financial Reports</h3>
+              <p class="lead">
+                Use the form above to generate custom reports for your expenses.
+              </p>
+              <p class="text-muted">
+                Select a date range, account, and category to analyze your spending patterns.
+              </p>
+            </div>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-light py-4 mt-5">
+    <div class="container text-center">
+      <p>SpendSight Financial Management Application</p>
+      <p class="text-muted">A database-focused financial management application built with Express.js and PostgreSQL</p>
+    </div>
+  </footer>
+
+  <!-- Bootstrap JS and dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <% if (reportData && reportData.stats.category_breakdown.length > 0) { %>
+  <!-- Chart Initialization Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Prepare category data for chart
+      const categoryNames = [];
+      const categoryAmounts = [];
+      const backgroundColors = [
+        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', 
+        '#FF9F40', '#8AC249', '#EA80FC', '#607D8B', '#E6491F'
+      ];
+      
+      <% reportData.stats.category_breakdown.forEach((category, index) => { %>
+        <% if (category.total_amount > 0) { %>
+          categoryNames.push('<%= category.category_name %>');
+          categoryAmounts.push(<%= category.total_amount %>);
+        <% } %>
+      <% }); %>
+      
+      // Create pie chart for categories
+      const ctxCategory = document.getElementById('categoryChart').getContext('2d');
+      new Chart(ctxCategory, {
+        type: 'pie',
+        data: {
+          labels: categoryNames,
+          datasets: [{
+            data: categoryAmounts,
+            backgroundColor: backgroundColors.slice(0, categoryNames.length),
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'right',
+              labels: {
+                boxWidth: 15
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+  <% } %>
+</body>
+</html> 
