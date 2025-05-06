@@ -169,6 +169,7 @@ router.post('/accounts/update/:id', async (req, res, next) => {
 router.post('/accounts/delete/:id', async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = req.query.user_id || 1; // Default to user 1 for demo
     
     // Check if account has associated transactions
     const checkTransactions = await db.query(
@@ -177,11 +178,38 @@ router.post('/accounts/delete/:id', async (req, res, next) => {
     );
     
     if (parseInt(checkTransactions.rows[0].count) > 0 || parseInt(checkTransactions.rows[1].count) > 0) {
-      const accounts = await models.Account.findAll();
+      // Fetch only the current user's accounts for displaying on the error page
+      const accounts = await models.Account.findAll({ user_id: userId });
+      
+      // Get account statistics for display
+      const accountStats = await db.query(`
+        SELECT 
+          a.id,
+          COALESCE(SUM(e.amount), 0) AS total_expenses,
+          COALESCE(COUNT(e.id), 0) AS expense_count
+        FROM 
+          accounts a
+        LEFT JOIN 
+          expenses e ON a.id = e.account_id
+        WHERE 
+          a.user_id = $1
+        GROUP BY 
+          a.id
+      `, [userId]);
+      
+      // Combine account data with stats
+      const accountsWithStats = accounts.map(account => {
+        const stats = accountStats.rows.find(stat => stat.id === account.id) || { total_expenses: 0, expense_count: 0 };
+        return {
+          ...account,
+          total_expenses: stats.total_expenses,
+          expense_count: stats.expense_count
+        };
+      });
       
       return res.status(400).render('accounts', { 
         title: 'Manage Accounts',
-        accounts: accounts,
+        accounts: accountsWithStats,
         error: 'Cannot delete account with associated transactions',
         success: null
       });
